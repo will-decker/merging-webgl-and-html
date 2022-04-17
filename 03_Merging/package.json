@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "three": "^0.129.0"
+  },
+  "devDependencies": {
+    "@parcel/transformer-glsl": "^2.4.1",
+    "parcel": "^2.4.1"
+  }
+}
