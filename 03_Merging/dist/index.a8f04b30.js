@@ -533,6 +533,7 @@ class Sketch {
         this.height = this.container.offsetHeight;
         this.camera = new _three.PerspectiveCamera(70, this.width / this.height, 100, 2000);
         this.camera.position.z = 600;
+        this.camera.fov = 2 * Math.atan(this.height / 2 / 600) * (180 / Math.PI);
         this.renderer = new _three.WebGLRenderer({
             antialias: true,
             alpha: true
@@ -540,6 +541,11 @@ class Sketch {
         this.renderer.setSize(this.width, this.height);
         this.container.appendChild(this.renderer.domElement);
         this.controls = new _orbitControlsJs.OrbitControls(this.camera, this.renderer.domElement);
+        this.images = [
+            ...document.querySelectorAll('img')
+        ];
+        this.addImages();
+        this.setPosition();
         this.resize();
         this.setupResize();
         this.addObjects();
@@ -554,6 +560,31 @@ class Sketch {
         this.renderer.setSize(this.width, this.height);
         this.camera.aspect = this.width / this.height;
         this.camera.updateProjectionMatrix();
+    }
+    addImages() {
+        this.imageStore = this.images.map((img)=>{
+            let bounds = img.getBoundingClientRect();
+            let geometry = new _three.PlaneBufferGeometry(bounds.width, bounds.height, 1, 1);
+            let material = new _three.MeshBasicMaterial({
+                color: 16711680
+            });
+            let mesh = new _three.Mesh(geometry, material);
+            this.scene.add(mesh);
+            return {
+                img: img,
+                mesh: mesh,
+                top: bounds.top,
+                left: bounds.left,
+                width: bounds.width,
+                height: bounds.height
+            };
+        });
+    }
+    setPosition() {
+        this.imageStore.forEach((o)=>{
+            o.mesh.position.y = -o.top + this.height / 2 - o.height / 2;
+            o.mesh.position.x = o.left - this.width / 2 + o.width / 2;
+        });
     }
     addObjects() {
         this.geometry = new _three.PlaneBufferGeometry(100, 100, 10, 10);
