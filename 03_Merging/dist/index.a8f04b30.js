@@ -517,6 +517,10 @@ function hmrAcceptRun(bundle, id) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _three = require("three");
+var _imagesloaded = require("imagesloaded");
+var _imagesloadedDefault = parcelHelpers.interopDefault(_imagesloaded);
+var _fontfaceobserver = require("fontfaceobserver");
+var _fontfaceobserverDefault = parcelHelpers.interopDefault(_fontfaceobserver);
 var _orbitControlsJs = require("three/examples/jsm/controls/OrbitControls.js");
 var _fragmentGlsl = require("./shaders/fragment.glsl");
 var _fragmentGlslDefault = parcelHelpers.interopDefault(_fragmentGlsl);
@@ -544,12 +548,36 @@ class Sketch {
         this.images = [
             ...document.querySelectorAll('img')
         ];
-        this.addImages();
-        this.setPosition();
-        this.resize();
-        this.setupResize();
-        this.addObjects();
-        this.render();
+        const fontOpen = new Promise((resolve)=>{
+            new _fontfaceobserverDefault.default('Open Sans').load().then(()=>{
+                resolve();
+            });
+        });
+        const fontPlayfair = new Promise((resolve)=>{
+            new _fontfaceobserverDefault.default('Playfair Display').load().then(()=>{
+                resolve();
+            });
+        });
+        // Preload images
+        const preloadImages = new Promise((resolve, reject)=>{
+            _imagesloadedDefault.default(document.querySelectorAll('img'), {
+                background: true
+            }, resolve);
+        });
+        // Wait for fonts and images to load before creating threejs objects
+        let allDone = [
+            fontOpen,
+            fontPlayfair,
+            preloadImages
+        ];
+        Promise.all(allDone).then(()=>{
+            this.addImages();
+            this.setPosition();
+            this.resize();
+            this.setupResize();
+            this.addObjects();
+            this.render();
+        });
     }
     setupResize() {
         window.addEventListener('resize', this.resize.bind(this));
@@ -582,6 +610,7 @@ class Sketch {
     }
     setPosition() {
         this.imageStore.forEach((o)=>{
+            // Offset position of threejs mesh because it's origin is center, DOM objects origin is top left corner
             o.mesh.position.y = -o.top + this.height / 2 - o.height / 2;
             o.mesh.position.x = o.left - this.width / 2 + o.width / 2;
         });
@@ -621,7 +650,7 @@ new Sketch({
     dom: document.getElementById('container')
 });
 
-},{"three":"ktPTu","three/examples/jsm/controls/OrbitControls.js":"7mqRv","./shaders/fragment.glsl":"lNZh0","./shaders/vertex.glsl":"cTz87","url:../img/ocean.jpg":"aT1Yp","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"ktPTu":[function(require,module,exports) {
+},{"three":"ktPTu","three/examples/jsm/controls/OrbitControls.js":"7mqRv","./shaders/fragment.glsl":"lNZh0","./shaders/vertex.glsl":"cTz87","url:../img/ocean.jpg":"aT1Yp","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","fontfaceobserver":"3cUcc","imagesloaded":"aYzyZ"}],"ktPTu":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "ACESFilmicToneMapping", ()=>ACESFilmicToneMapping
@@ -30995,6 +31024,511 @@ function getOrigin(url) {
 exports.getBundleURL = getBundleURLCached;
 exports.getBaseURL = getBaseURL;
 exports.getOrigin = getOrigin;
+
+},{}],"3cUcc":[function(require,module,exports) {
+/* Font Face Observer v2.1.0 - © Bram Stein. License: BSD-3-Clause */ (function() {
+    function l(a, b) {
+        document.addEventListener ? a.addEventListener("scroll", b, !1) : a.attachEvent("scroll", b);
+    }
+    function m(a) {
+        document.body ? a() : document.addEventListener ? document.addEventListener("DOMContentLoaded", function c() {
+            document.removeEventListener("DOMContentLoaded", c);
+            a();
+        }) : document.attachEvent("onreadystatechange", function k() {
+            if ("interactive" == document.readyState || "complete" == document.readyState) document.detachEvent("onreadystatechange", k), a();
+        });
+    }
+    function t(a) {
+        this.a = document.createElement("div");
+        this.a.setAttribute("aria-hidden", "true");
+        this.a.appendChild(document.createTextNode(a));
+        this.b = document.createElement("span");
+        this.c = document.createElement("span");
+        this.h = document.createElement("span");
+        this.f = document.createElement("span");
+        this.g = -1;
+        this.b.style.cssText = "max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";
+        this.c.style.cssText = "max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";
+        this.f.style.cssText = "max-width:none;display:inline-block;position:absolute;height:100%;width:100%;overflow:scroll;font-size:16px;";
+        this.h.style.cssText = "display:inline-block;width:200%;height:200%;font-size:16px;max-width:none;";
+        this.b.appendChild(this.h);
+        this.c.appendChild(this.f);
+        this.a.appendChild(this.b);
+        this.a.appendChild(this.c);
+    }
+    function u(a, b) {
+        a.a.style.cssText = "max-width:none;min-width:20px;min-height:20px;display:inline-block;overflow:hidden;position:absolute;width:auto;margin:0;padding:0;top:-999px;white-space:nowrap;font-synthesis:none;font:" + b + ";";
+    }
+    function z(a) {
+        var b = a.a.offsetWidth, c = b + 100;
+        a.f.style.width = c + "px";
+        a.c.scrollLeft = c;
+        a.b.scrollLeft = a.b.scrollWidth + 100;
+        return a.g !== b ? (a.g = b, !0) : !1;
+    }
+    function A(a1, b) {
+        function c() {
+            var a = k;
+            z(a) && a.a.parentNode && b(a.g);
+        }
+        var k = a1;
+        l(a1.b, c);
+        l(a1.c, c);
+        z(a1);
+    }
+    function B(a, b) {
+        var c = b || {};
+        this.family = a;
+        this.style = c.style || "normal";
+        this.weight = c.weight || "normal";
+        this.stretch = c.stretch || "normal";
+    }
+    var C = null, D = null, E = null, F = null;
+    function G() {
+        if (null === D) {
+            if (J() && /Apple/.test(window.navigator.vendor)) {
+                var a = /AppleWebKit\/([0-9]+)(?:\.([0-9]+))(?:\.([0-9]+))/.exec(window.navigator.userAgent);
+                D = !!a && 603 > parseInt(a[1], 10);
+            } else D = !1;
+        }
+        return D;
+    }
+    function J() {
+        null === F && (F = !!document.fonts);
+        return F;
+    }
+    function K() {
+        if (null === E) {
+            var a = document.createElement("div");
+            try {
+                a.style.font = "condensed 100px sans-serif";
+            } catch (b) {}
+            E = "" !== a.style.font;
+        }
+        return E;
+    }
+    function L(a, b) {
+        return [
+            a.style,
+            a.weight,
+            K() ? a.stretch : "",
+            "100px",
+            b
+        ].join(" ");
+    }
+    B.prototype.load = function(a2, b1) {
+        var c1 = this, k = a2 || "BESbswy", r = 0, n = b1 || 3000, H = (new Date).getTime();
+        return new Promise(function(a3, b2) {
+            if (J() && !G()) {
+                var M = new Promise(function(a, b) {
+                    function e() {
+                        (new Date).getTime() - H >= n ? b(Error("" + n + "ms timeout exceeded")) : document.fonts.load(L(c1, '"' + c1.family + '"'), k).then(function(c) {
+                            1 <= c.length ? a() : setTimeout(e, 25);
+                        }, b);
+                    }
+                    e();
+                }), N = new Promise(function(a, c) {
+                    r = setTimeout(function() {
+                        c(Error("" + n + "ms timeout exceeded"));
+                    }, n);
+                });
+                Promise.race([
+                    N,
+                    M
+                ]).then(function() {
+                    clearTimeout(r);
+                    a3(c1);
+                }, b2);
+            } else m(function() {
+                function v() {
+                    var b;
+                    if (b = -1 != f && -1 != g || -1 != f && -1 != h || -1 != g && -1 != h) (b = f != g && f != h && g != h) || (null === C && (b = /AppleWebKit\/([0-9]+)(?:\.([0-9]+))/.exec(window.navigator.userAgent), C = !!b && (536 > parseInt(b[1], 10) || 536 === parseInt(b[1], 10) && 11 >= parseInt(b[2], 10))), b = C && (f == w && g == w && h == w || f == x && g == x && h == x || f == y && g == y && h == y)), b = !b;
+                    b && (d.parentNode && d.parentNode.removeChild(d), clearTimeout(r), a3(c1));
+                }
+                function I() {
+                    if ((new Date).getTime() - H >= n) d.parentNode && d.parentNode.removeChild(d), b2(Error("" + n + "ms timeout exceeded"));
+                    else {
+                        var a = document.hidden;
+                        if (!0 === a || void 0 === a) f = e.a.offsetWidth, g = p.a.offsetWidth, h = q.a.offsetWidth, v();
+                        r = setTimeout(I, 50);
+                    }
+                }
+                var e = new t(k), p = new t(k), q = new t(k), f = -1, g = -1, h = -1, w = -1, x = -1, y = -1, d = document.createElement("div");
+                d.dir = "ltr";
+                u(e, L(c1, "sans-serif"));
+                u(p, L(c1, "serif"));
+                u(q, L(c1, "monospace"));
+                d.appendChild(e.a);
+                d.appendChild(p.a);
+                d.appendChild(q.a);
+                document.body.appendChild(d);
+                w = e.a.offsetWidth;
+                x = p.a.offsetWidth;
+                y = q.a.offsetWidth;
+                I();
+                A(e, function(a) {
+                    f = a;
+                    v();
+                });
+                u(e, L(c1, '"' + c1.family + '",sans-serif'));
+                A(p, function(a) {
+                    g = a;
+                    v();
+                });
+                u(p, L(c1, '"' + c1.family + '",serif'));
+                A(q, function(a) {
+                    h = a;
+                    v();
+                });
+                u(q, L(c1, '"' + c1.family + '",monospace'));
+            });
+        });
+    };
+    module.exports = B;
+})();
+
+},{}],"aYzyZ":[function(require,module,exports) {
+/*!
+ * imagesLoaded v5.0.0
+ * JavaScript is all like "You images are done yet or what?"
+ * MIT License
+ */ (function(window, factory) {
+    // universal module definition
+    if (module.exports) // CommonJS
+    module.exports = factory(window, require('ev-emitter'));
+    else // browser global
+    window.imagesLoaded = factory(window, window.EvEmitter);
+})(typeof window !== 'undefined' ? window : this, function factory(window, EvEmitter) {
+    let $ = window.jQuery;
+    let console = window.console;
+    // -------------------------- helpers -------------------------- //
+    // turn element or nodeList into an array
+    function makeArray(obj) {
+        // use object if already an array
+        if (Array.isArray(obj)) return obj;
+        let isArrayLike = typeof obj == 'object' && typeof obj.length == 'number';
+        // convert nodeList to array
+        if (isArrayLike) return [
+            ...obj
+        ];
+        // array of single index
+        return [
+            obj
+        ];
+    }
+    // -------------------------- imagesLoaded -------------------------- //
+    /**
+ * @param {[Array, Element, NodeList, String]} elem
+ * @param {[Object, Function]} options - if function, use as callback
+ * @param {Function} onAlways - callback function
+ * @returns {ImagesLoaded}
+ */ function ImagesLoaded(elem, options, onAlways) {
+        // coerce ImagesLoaded() without new, to be new ImagesLoaded()
+        if (!(this instanceof ImagesLoaded)) return new ImagesLoaded(elem, options, onAlways);
+        // use elem as selector string
+        let queryElem = elem;
+        if (typeof elem == 'string') queryElem = document.querySelectorAll(elem);
+        // bail if bad element
+        if (!queryElem) {
+            console.error(`Bad element for imagesLoaded ${queryElem || elem}`);
+            return;
+        }
+        this.elements = makeArray(queryElem);
+        this.options = {};
+        // shift arguments if no options set
+        if (typeof options == 'function') onAlways = options;
+        else Object.assign(this.options, options);
+        if (onAlways) this.on('always', onAlways);
+        this.getImages();
+        // add jQuery Deferred object
+        if ($) this.jqDeferred = new $.Deferred();
+        // HACK check async to allow time to bind listeners
+        setTimeout(this.check.bind(this));
+    }
+    ImagesLoaded.prototype = Object.create(EvEmitter.prototype);
+    ImagesLoaded.prototype.getImages = function() {
+        this.images = [];
+        // filter & find items if we have an item selector
+        this.elements.forEach(this.addElementImages, this);
+    };
+    const elementNodeTypes = [
+        1,
+        9,
+        11
+    ];
+    /**
+ * @param {Node} elem
+ */ ImagesLoaded.prototype.addElementImages = function(elem) {
+        // filter siblings
+        if (elem.nodeName === 'IMG') this.addImage(elem);
+        // get background image on element
+        if (this.options.background === true) this.addElementBackgroundImages(elem);
+        // find children
+        // no non-element nodes, #143
+        let { nodeType  } = elem;
+        if (!nodeType || !elementNodeTypes.includes(nodeType)) return;
+        let childImgs = elem.querySelectorAll('img');
+        // concat childElems to filterFound array
+        for (let img of childImgs)this.addImage(img);
+        // get child background images
+        if (typeof this.options.background == 'string') {
+            let children = elem.querySelectorAll(this.options.background);
+            for (let child of children)this.addElementBackgroundImages(child);
+        }
+    };
+    const reURL = /url\((['"])?(.*?)\1\)/gi;
+    ImagesLoaded.prototype.addElementBackgroundImages = function(elem) {
+        let style = getComputedStyle(elem);
+        // Firefox returns null if in a hidden iframe https://bugzil.la/548397
+        if (!style) return;
+        // get url inside url("...")
+        let matches = reURL.exec(style.backgroundImage);
+        while(matches !== null){
+            let url = matches && matches[2];
+            if (url) this.addBackground(url, elem);
+            matches = reURL.exec(style.backgroundImage);
+        }
+    };
+    /**
+ * @param {Image} img
+ */ ImagesLoaded.prototype.addImage = function(img) {
+        let loadingImage = new LoadingImage(img);
+        this.images.push(loadingImage);
+    };
+    ImagesLoaded.prototype.addBackground = function(url, elem) {
+        let background = new Background(url, elem);
+        this.images.push(background);
+    };
+    ImagesLoaded.prototype.check = function() {
+        this.progressedCount = 0;
+        this.hasAnyBroken = false;
+        // complete if no images
+        if (!this.images.length) {
+            this.complete();
+            return;
+        }
+        /* eslint-disable-next-line func-style */ let onProgress = (image, elem, message)=>{
+            // HACK - Chrome triggers event before object properties have changed. #83
+            setTimeout(()=>{
+                this.progress(image, elem, message);
+            });
+        };
+        this.images.forEach(function(loadingImage) {
+            loadingImage.once('progress', onProgress);
+            loadingImage.check();
+        });
+    };
+    ImagesLoaded.prototype.progress = function(image, elem, message) {
+        this.progressedCount++;
+        this.hasAnyBroken = this.hasAnyBroken || !image.isLoaded;
+        // progress event
+        this.emitEvent('progress', [
+            this,
+            image,
+            elem
+        ]);
+        if (this.jqDeferred && this.jqDeferred.notify) this.jqDeferred.notify(this, image);
+        // check if completed
+        if (this.progressedCount === this.images.length) this.complete();
+        if (this.options.debug && console) console.log(`progress: ${message}`, image, elem);
+    };
+    ImagesLoaded.prototype.complete = function() {
+        let eventName = this.hasAnyBroken ? 'fail' : 'done';
+        this.isComplete = true;
+        this.emitEvent(eventName, [
+            this
+        ]);
+        this.emitEvent('always', [
+            this
+        ]);
+        if (this.jqDeferred) {
+            let jqMethod = this.hasAnyBroken ? 'reject' : 'resolve';
+            this.jqDeferred[jqMethod](this);
+        }
+    };
+    // --------------------------  -------------------------- //
+    function LoadingImage(img) {
+        this.img = img;
+    }
+    LoadingImage.prototype = Object.create(EvEmitter.prototype);
+    LoadingImage.prototype.check = function() {
+        // If complete is true and browser supports natural sizes,
+        // try to check for image status manually.
+        let isComplete = this.getIsImageComplete();
+        if (isComplete) {
+            // report based on naturalWidth
+            this.confirm(this.img.naturalWidth !== 0, 'naturalWidth');
+            return;
+        }
+        // If none of the checks above matched, simulate loading on detached element.
+        this.proxyImage = new Image();
+        // add crossOrigin attribute. #204
+        if (this.img.crossOrigin) this.proxyImage.crossOrigin = this.img.crossOrigin;
+        this.proxyImage.addEventListener('load', this);
+        this.proxyImage.addEventListener('error', this);
+        // bind to image as well for Firefox. #191
+        this.img.addEventListener('load', this);
+        this.img.addEventListener('error', this);
+        this.proxyImage.src = this.img.currentSrc || this.img.src;
+    };
+    LoadingImage.prototype.getIsImageComplete = function() {
+        // check for non-zero, non-undefined naturalWidth
+        // fixes Safari+InfiniteScroll+Masonry bug infinite-scroll#671
+        return this.img.complete && this.img.naturalWidth;
+    };
+    LoadingImage.prototype.confirm = function(isLoaded, message) {
+        this.isLoaded = isLoaded;
+        let { parentNode  } = this.img;
+        // emit progress with parent <picture> or self <img>
+        let elem = parentNode.nodeName === 'PICTURE' ? parentNode : this.img;
+        this.emitEvent('progress', [
+            this,
+            elem,
+            message
+        ]);
+    };
+    // ----- events ----- //
+    // trigger specified handler for event type
+    LoadingImage.prototype.handleEvent = function(event) {
+        let method = 'on' + event.type;
+        if (this[method]) this[method](event);
+    };
+    LoadingImage.prototype.onload = function() {
+        this.confirm(true, 'onload');
+        this.unbindEvents();
+    };
+    LoadingImage.prototype.onerror = function() {
+        this.confirm(false, 'onerror');
+        this.unbindEvents();
+    };
+    LoadingImage.prototype.unbindEvents = function() {
+        this.proxyImage.removeEventListener('load', this);
+        this.proxyImage.removeEventListener('error', this);
+        this.img.removeEventListener('load', this);
+        this.img.removeEventListener('error', this);
+    };
+    // -------------------------- Background -------------------------- //
+    function Background(url, element) {
+        this.url = url;
+        this.element = element;
+        this.img = new Image();
+    }
+    // inherit LoadingImage prototype
+    Background.prototype = Object.create(LoadingImage.prototype);
+    Background.prototype.check = function() {
+        this.img.addEventListener('load', this);
+        this.img.addEventListener('error', this);
+        this.img.src = this.url;
+        // check if image is already complete
+        let isComplete = this.getIsImageComplete();
+        if (isComplete) {
+            this.confirm(this.img.naturalWidth !== 0, 'naturalWidth');
+            this.unbindEvents();
+        }
+    };
+    Background.prototype.unbindEvents = function() {
+        this.img.removeEventListener('load', this);
+        this.img.removeEventListener('error', this);
+    };
+    Background.prototype.confirm = function(isLoaded, message) {
+        this.isLoaded = isLoaded;
+        this.emitEvent('progress', [
+            this,
+            this.element,
+            message
+        ]);
+    };
+    // -------------------------- jQuery -------------------------- //
+    ImagesLoaded.makeJQueryPlugin = function(jQuery) {
+        jQuery = jQuery || window.jQuery;
+        if (!jQuery) return;
+        // set local variable
+        $ = jQuery;
+        // $().imagesLoaded()
+        $.fn.imagesLoaded = function(options, onAlways) {
+            let instance = new ImagesLoaded(this, options, onAlways);
+            return instance.jqDeferred.promise($(this));
+        };
+    };
+    // try making plugin
+    ImagesLoaded.makeJQueryPlugin();
+    // --------------------------  -------------------------- //
+    return ImagesLoaded;
+});
+
+},{"ev-emitter":"7rCHo"}],"7rCHo":[function(require,module,exports) {
+/**
+ * EvEmitter v2.1.1
+ * Lil' event emitter
+ * MIT License
+ */ (function(global, factory) {
+    // universal module definition
+    if (module.exports) // CommonJS - Browserify, Webpack
+    module.exports = factory();
+    else // Browser globals
+    global.EvEmitter = factory();
+})(typeof window != 'undefined' ? window : this, function() {
+    function EvEmitter() {}
+    let proto = EvEmitter.prototype;
+    proto.on = function(eventName, listener) {
+        if (!eventName || !listener) return this;
+        // set events hash
+        let events = this._events = this._events || {};
+        // set listeners array
+        let listeners = events[eventName] = events[eventName] || [];
+        // only add once
+        if (!listeners.includes(listener)) listeners.push(listener);
+        return this;
+    };
+    proto.once = function(eventName, listener) {
+        if (!eventName || !listener) return this;
+        // add event
+        this.on(eventName, listener);
+        // set once flag
+        // set onceEvents hash
+        let onceEvents = this._onceEvents = this._onceEvents || {};
+        // set onceListeners object
+        let onceListeners = onceEvents[eventName] = onceEvents[eventName] || {};
+        // set flag
+        onceListeners[listener] = true;
+        return this;
+    };
+    proto.off = function(eventName, listener) {
+        let listeners = this._events && this._events[eventName];
+        if (!listeners || !listeners.length) return this;
+        let index = listeners.indexOf(listener);
+        if (index != -1) listeners.splice(index, 1);
+        return this;
+    };
+    proto.emitEvent = function(eventName, args) {
+        let listeners = this._events && this._events[eventName];
+        if (!listeners || !listeners.length) return this;
+        // copy over to avoid interference if .off() in listener
+        listeners = listeners.slice(0);
+        args = args || [];
+        // once stuff
+        let onceListeners = this._onceEvents && this._onceEvents[eventName];
+        for (let listener of listeners){
+            let isOnce = onceListeners && onceListeners[listener];
+            if (isOnce) {
+                // remove listener
+                // remove before trigger to prevent recursion
+                this.off(eventName, listener);
+                // unset once flag
+                delete onceListeners[listener];
+            }
+            // trigger listener
+            listener.apply(this, args);
+        }
+        return this;
+    };
+    proto.allOff = function() {
+        delete this._events;
+        delete this._onceEvents;
+        return this;
+    };
+    return EvEmitter;
+});
 
 },{}]},["44WRj","5AKj5"], "5AKj5", "parcelRequire94c2")
 

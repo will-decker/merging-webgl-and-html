@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import imagesLoaded from 'imagesloaded';
+import FontFaceObserver from 'fontfaceobserver';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import fragment from './shaders/fragment.glsl';
 import vertex from './shaders/vertex.glsl';
@@ -35,12 +37,37 @@ export default class Sketch {
 
     this.images = [...document.querySelectorAll('img')];
 
-    this.addImages();
-    this.setPosition();
-    this.resize();
-    this.setupResize();
-    this.addObjects();
-    this.render();
+    const fontOpen = new Promise((resolve) => {
+      new FontFaceObserver('Open Sans').load().then(() => {
+        resolve();
+      });
+    });
+    const fontPlayfair = new Promise((resolve) => {
+      new FontFaceObserver('Playfair Display').load().then(() => {
+        resolve();
+      });
+    });
+
+    // Preload images
+    const preloadImages = new Promise((resolve, reject) => {
+      imagesLoaded(
+        document.querySelectorAll('img'),
+        { background: true },
+        resolve
+      );
+    });
+
+    // Wait for fonts and images to load before creating threejs objects
+    let allDone = [fontOpen, fontPlayfair, preloadImages];
+
+    Promise.all(allDone).then(() => {
+      this.addImages();
+      this.setPosition();
+      this.resize();
+      this.setupResize();
+      this.addObjects();
+      this.render();
+    });
   }
 
   setupResize() {
@@ -85,6 +112,7 @@ export default class Sketch {
 
   setPosition() {
     this.imageStore.forEach((o) => {
+      // Offset position of threejs mesh because it's origin is center, DOM objects origin is top left corner
       o.mesh.position.y = -o.top + this.height / 2 - o.height / 2;
       o.mesh.position.x = o.left - this.width / 2 + o.width / 2;
     });
