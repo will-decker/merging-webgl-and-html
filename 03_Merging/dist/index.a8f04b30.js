@@ -521,6 +521,8 @@ var _imagesloaded = require("imagesloaded");
 var _imagesloadedDefault = parcelHelpers.interopDefault(_imagesloaded);
 var _fontfaceobserver = require("fontfaceobserver");
 var _fontfaceobserverDefault = parcelHelpers.interopDefault(_fontfaceobserver);
+var _scroll = require("./scroll");
+var _scrollDefault = parcelHelpers.interopDefault(_scroll);
 var _orbitControlsJs = require("three/examples/jsm/controls/OrbitControls.js");
 var _fragmentGlsl = require("./shaders/fragment.glsl");
 var _fragmentGlslDefault = parcelHelpers.interopDefault(_fragmentGlsl);
@@ -570,13 +572,20 @@ class Sketch {
             fontPlayfair,
             preloadImages
         ];
+        this.currentScroll = 0;
         Promise.all(allDone).then(()=>{
+            this.scroll = new _scrollDefault.default();
             this.addImages();
             this.setPosition();
             this.resize();
             this.setupResize();
-            this.addObjects();
+            // this.addObjects();
             this.render();
+        // Default Scroll
+        // window.addEventListener('scroll', () => {
+        //   this.currentScroll = window.scrollY;
+        //   this.setPosition();
+        // });
         });
     }
     setupResize() {
@@ -593,8 +602,11 @@ class Sketch {
         this.imageStore = this.images.map((img)=>{
             let bounds = img.getBoundingClientRect();
             let geometry = new _three.PlaneBufferGeometry(bounds.width, bounds.height, 1, 1);
+            let texture = new _three.Texture(img);
+            texture.needsUpdate = true;
             let material = new _three.MeshBasicMaterial({
-                color: 16711680
+                // color: 0xff0000,
+                map: texture
             });
             let mesh = new _three.Mesh(geometry, material);
             this.scene.add(mesh);
@@ -611,7 +623,7 @@ class Sketch {
     setPosition() {
         this.imageStore.forEach((o)=>{
             // Offset position of threejs mesh because it's origin is center, DOM objects origin is top left corner
-            o.mesh.position.y = -o.top + this.height / 2 - o.height / 2;
+            o.mesh.position.y = this.currentScroll - o.top + this.height / 2 - o.height / 2;
             o.mesh.position.x = o.left - this.width / 2 + o.width / 2;
         });
     }
@@ -638,9 +650,12 @@ class Sketch {
     }
     render() {
         this.time += 0.02;
+        this.scroll.render();
+        this.currentScroll = this.scroll.scrollToRender;
+        this.setPosition();
         // this.mesh.rotation.x = this.time / 2000;
         // this.mesh.rotation.y = this.time / 1000;
-        this.material.uniforms.time.value = this.time;
+        // this.material.uniforms.time.value = this.time;
         this.renderer.render(this.scene, this.camera);
         window.requestAnimationFrame(this.render.bind(this));
     }
@@ -650,7 +665,7 @@ new Sketch({
     dom: document.getElementById('container')
 });
 
-},{"three":"ktPTu","three/examples/jsm/controls/OrbitControls.js":"7mqRv","./shaders/fragment.glsl":"lNZh0","./shaders/vertex.glsl":"cTz87","url:../img/ocean.jpg":"aT1Yp","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","fontfaceobserver":"3cUcc","imagesloaded":"aYzyZ"}],"ktPTu":[function(require,module,exports) {
+},{"three":"ktPTu","three/examples/jsm/controls/OrbitControls.js":"7mqRv","./shaders/fragment.glsl":"lNZh0","./shaders/vertex.glsl":"cTz87","url:../img/ocean.jpg":"aT1Yp","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","fontfaceobserver":"3cUcc","imagesloaded":"aYzyZ","./scroll":"ox3Ut"}],"ktPTu":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "ACESFilmicToneMapping", ()=>ACESFilmicToneMapping
@@ -31530,6 +31545,83 @@ exports.getOrigin = getOrigin;
     return EvEmitter;
 });
 
-},{}]},["44WRj","5AKj5"], "5AKj5", "parcelRequire94c2")
+},{}],"ox3Ut":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+const lerp = (a, b, n)=>(1 - n) * a + n * b
+;
+class Scroll {
+    constructor(){
+        this.DOM = {
+            main: document.querySelector("main")
+        };
+        // the scrollable element
+        // we translate this element when scrolling (y-axis)
+        this.DOM.scrollable = this.DOM.main.querySelector("div[data-scroll]");
+        this.docScroll = 0;
+        this.scrollToRender = 0;
+        this.current = 0;
+        this.ease = 0.1;
+        this.speed = 0;
+        this.speedTarget = 0;
+        // set the body's height
+        this.setSize();
+        // set the initial values
+        this.getScroll();
+        this.init();
+        // the <main> element's style needs to be modified
+        this.style();
+        // init/bind events
+        this.initEvents();
+        // start the render loop
+        requestAnimationFrame(()=>this.render()
+        );
+    }
+    init() {
+        // sets the initial value (no interpolation) - translate the scroll value
+        for(const key in this.renderedStyles)this.current = this.scrollToRender = this.getScroll();
+        // translate the scrollable element
+        this.setPosition();
+        this.shouldRender = true;
+    }
+    style() {
+        this.DOM.main.style.position = "fixed";
+        this.DOM.main.style.width = this.DOM.main.style.height = "100%";
+        this.DOM.main.style.top = this.DOM.main.style.left = 0;
+        this.DOM.main.style.overflow = "hidden";
+    }
+    getScroll() {
+        this.docScroll = window.pageYOffset || document.documentElement.scrollTop;
+        return this.docScroll;
+    }
+    initEvents() {
+        window.onbeforeunload = function() {
+            window.scrollTo(0, 0);
+        };
+        // on resize reset the body's height
+        window.addEventListener("resize", ()=>this.setSize()
+        );
+        window.addEventListener("scroll", this.getScroll.bind(this));
+    }
+    setSize() {
+        // set the heigh of the body in order to keep the scrollbar on the page
+        document.body.style.height = `${this.DOM.scrollable.scrollHeight}px`;
+    }
+    setPosition() {
+        // translates the scrollable element
+        if (Math.round(this.scrollToRender) !== Math.round(this.current) || this.scrollToRender < 10) this.DOM.scrollable.style.transform = `translate3d(0,${-1 * this.scrollToRender}px,0)`;
+    }
+    render() {
+        this.speed = Math.min(Math.abs(this.current - this.scrollToRender), 200) / 200;
+        this.speedTarget += (this.speed - this.speedTarget) * 0.2;
+        this.current = this.getScroll();
+        this.scrollToRender = lerp(this.scrollToRender, this.current, this.ease);
+        // and translate the scrollable element
+        this.setPosition();
+    }
+}
+exports.default = Scroll;
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["44WRj","5AKj5"], "5AKj5", "parcelRequire94c2")
 
 //# sourceMappingURL=index.a8f04b30.js.map

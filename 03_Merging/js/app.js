@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import imagesLoaded from 'imagesloaded';
 import FontFaceObserver from 'fontfaceobserver';
+import Scroll from './scroll';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import fragment from './shaders/fragment.glsl';
 import vertex from './shaders/vertex.glsl';
@@ -59,14 +60,21 @@ export default class Sketch {
 
     // Wait for fonts and images to load before creating threejs objects
     let allDone = [fontOpen, fontPlayfair, preloadImages];
+    this.currentScroll = 0;
 
     Promise.all(allDone).then(() => {
+      this.scroll = new Scroll();
       this.addImages();
       this.setPosition();
       this.resize();
       this.setupResize();
-      this.addObjects();
+      // this.addObjects();
       this.render();
+      // Default Scroll
+      // window.addEventListener('scroll', () => {
+      //   this.currentScroll = window.scrollY;
+      //   this.setPosition();
+      // });
     });
   }
 
@@ -92,8 +100,12 @@ export default class Sketch {
         1,
         1
       );
-
-      let material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      let texture = new THREE.Texture(img);
+      texture.needsUpdate = true;
+      let material = new THREE.MeshBasicMaterial({
+        // color: 0xff0000,
+        map: texture,
+      });
 
       let mesh = new THREE.Mesh(geometry, material);
 
@@ -113,7 +125,8 @@ export default class Sketch {
   setPosition() {
     this.imageStore.forEach((o) => {
       // Offset position of threejs mesh because it's origin is center, DOM objects origin is top left corner
-      o.mesh.position.y = -o.top + this.height / 2 - o.height / 2;
+      o.mesh.position.y =
+        this.currentScroll - o.top + this.height / 2 - o.height / 2;
       o.mesh.position.x = o.left - this.width / 2 + o.width / 2;
     });
   }
@@ -140,10 +153,15 @@ export default class Sketch {
 
   render() {
     this.time += 0.02;
+
+    this.scroll.render();
+    this.currentScroll = this.scroll.scrollToRender;
+    this.setPosition();
+
     // this.mesh.rotation.x = this.time / 2000;
     // this.mesh.rotation.y = this.time / 1000;
 
-    this.material.uniforms.time.value = this.time;
+    // this.material.uniforms.time.value = this.time;
 
     this.renderer.render(this.scene, this.camera);
     window.requestAnimationFrame(this.render.bind(this));
